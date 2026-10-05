@@ -40,7 +40,7 @@ class TextExtractor(Protocol):
 
 class ClaudeVisionExtractor:  # fast lane, available now
     ...
-class LocalOcrExtractor:      # ocrmac / Tesseract, drop-in later
+class LocalOcrExtractor:      # GLM-OCR on MLX (ocr.py), implemented
     ...
 
 EXTRACTOR = os.getenv("BRIEFKLAR_EXTRACTOR", "claude")  # backend setting: "claude" | "local", never set by the client
@@ -91,7 +91,7 @@ class Analysis:
 Built in two stages behind the `TextExtractor` interface:
 
 1. **Fast lane (start now):** `ClaudeVisionExtractor` sends the image or PDF to Claude with a strict "transcribe verbatim, don't interpret" prompt and returns plain text. This is a separate call from the analysis in part B, so the extracted text still goes through redaction before analysis.
-2. **Local OCR (later):** `LocalOcrExtractor` uses `ocrmac` on a Mac, with Tesseract (`deu` model) as the fallback. Switching to it is a single config change (`BRIEFKLAR_EXTRACTOR=local`) and needs no code changes elsewhere.
+2. **Local OCR (implemented):** `LocalOcrExtractor` uses GLM-OCR (0.9B) on Apple Silicon via MLX; it beat Tesseract `deu`, PaddleOCR-VL and dots.ocr on the six MUSTER letters (README). Switching to it is a single config change (`BRIEFKLAR_EXTRACTOR=local`) and needs no code changes elsewhere.
 
 Redaction:
 - Redaction uses simple rules: the address block top left, the greeting and signature, birth dates, file numbers and IBANs. Deadlines and amounts are kept.

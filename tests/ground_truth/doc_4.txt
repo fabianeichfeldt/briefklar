@@ -1,0 +1,23 @@
+Beitragsservice (Muster)
+Rundfunkbeitrag
+MUSTER · fiktives Demo-Schreiben
+Beitragsservice (Muster) · Rundfunkbeitrag · Nürnberg
+Herrn
+Carlos Mendes
+Musterallee 21
+90459 Nürnberg
+Beitragsnummer 000 000 001
+Datum 26.09.2026
+Zahlungserinnerung
+Sehr geehrter Herr Mendes,
+für Ihre Wohnung ist der Rundfunkbeitrag zu zahlen. Leider konnten wir für den folgenden Zeitraum keinen Zahlungseingang feststellen:
+Zeitraum 07.2026 – 09.2026
+Offener Betrag 55,08 Euro
+Zahlbar bis 15.10.2026
+Bitte überweisen Sie den offenen Betrag unter Angabe Ihrer Beitragsnummer. Am einfachsten zahlen Sie per Lastschrift – das entsprechende Formular finden Sie online.
+Wenn Sie den Betrag nicht fristgerecht zahlen, erhalten Sie einen Festsetzungsbescheid; hierbei wird ein Säumniszuschlag erhoben. Bei weiterhin ausbleibender Zahlung kann die Forderung im Wege der Zwangsvollstreckung beigetrieben werden.
+Sie beziehen Sozialleistungen (z. B. Bürgergeld, BAföG)? Dann können Sie unter Umständen von der Beitragspflicht befreit werden. Der Antrag ist schriftlich mit Nachweis zu stellen.
+Mit freundlichen Grüßen
+Ihr Beitragsservice
+Bankverbindung: IBAN DE00 0000 0000 0000 0000 00 (MUSTER – nicht überweisen). Verwendungszweck: Beitragsnummer.
+Fiktives Beispiel für den Hackathon-Prototyp „Briefklar“. Alle Namen, Nummern und Termine sind erfunden.

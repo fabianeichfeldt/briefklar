@@ -1,0 +1,21 @@
+Finanzamt Nürnberg-Zentral
+Veranlagungsstelle 21
+MUSTER · fiktives Demo-Schreiben
+Finanzamt Nürnberg-Zentral · Veranlagungsstelle 21 · Nürnberg
+Frau
+Priya Natarajan
+Beispielgasse 3
+90419 Nürnberg
+Steuernummer 241/123/45678
+Steuer-ID 12 345 678 901
+Datum 22.09.2026
+Erinnerung – Abgabe der Einkommensteuererklärung 2025
+Sehr geehrte Frau Natarajan,
+für das Kalenderjahr 2025 liegt dem Finanzamt Ihre Einkommensteuererklärung noch nicht vor. Sie sind zur Abgabe verpflichtet (§ 149 AO, § 25 Abs. 3 EStG i. V. m. § 46 EStG).
+Ich bitte Sie, die Erklärung bis zum 30.10.2026 elektronisch über ELSTER zu übermitteln.
+Wird die Steuererklärung nicht fristgerecht abgegeben, ist ein Verspätungszuschlag festzusetzen (§ 152 AO). Er beträgt für jeden angefangenen Monat der Verspätung 0,25 Prozent der festgesetzten Steuer, mindestens jedoch 25 Euro. Außerdem kann ein Zwangsgeld angedroht und festgesetzt werden (§§ 328, 329 AO). Ferner können die Besteuerungsgrundlagen geschätzt werden (§ 162 AO).
+Sollten Sie die Erklärung zwischenzeitlich abgegeben haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.
+Mit freundlichen Grüßen
+Ihr Finanzamt
+Dieses Schreiben ist maschinell erstellt und wird nicht unterschrieben.
+Fiktives Beispiel für den Hackathon-Prototyp „Briefklar“. Alle Namen, Nummern und Termine sind erfunden.

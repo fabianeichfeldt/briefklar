@@ -1,0 +1,22 @@
+Familienkasse Bayern Nord
+Bundesagentur für Arbeit (Muster)
+MUSTER · fiktives Demo-Schreiben
+Familienkasse Bayern Nord · Bundesagentur für Arbeit (Muster) · Nürnberg
+Herrn
+Mehmet Yıldız
+Musterring 5
+90471 Nürnberg
+Kindergeld-Nr. 123FK456789
+Datum 30.09.2026
+Kindergeld – Anforderung von Unterlagen (Mitwirkungspflicht)
+Sehr geehrter Herr Yıldız,
+zur Prüfung Ihres Anspruchs auf Kindergeld für Ihr Kind Elif Yıldız benötige ich noch folgende Unterlagen:
+aktuelle Schulbescheinigung für das Schuljahr 2026/2027
+Kopie Ihres gültigen Aufenthaltstitels (Vorder- und Rückseite)
+Nachweis über Ihre Erwerbstätigkeit (z. B. aktuelle Gehaltsabrechnung)
+Bitte senden Sie die Unterlagen bis zum 28.10.2026 an die Familienkasse. Sie können die Unterlagen auch online hochladen. Geben Sie dabei immer Ihre Kindergeldnummer an.
+Sie sind nach § 60 Erstes Buch Sozialgesetzbuch (SGB I) verpflichtet, alle für die Leistung erheblichen Tatsachen anzugeben und Beweisurkunden vorzulegen. Werden die angeforderten Unterlagen nicht fristgerecht vorgelegt, kann die Kindergeldfestsetzung aufgehoben und bereits gezahltes Kindergeld zurückgefordert werden.
+Mit freundlichen Grüßen
+Ihre Familienkasse
+Bitte keine Originale einsenden. Eingereichte Unterlagen werden nicht zurückgeschickt.
+Fiktives Beispiel für den Hackathon-Prototyp „Briefklar“. Alle Namen, Nummern und Termine sind erfunden.

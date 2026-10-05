@@ -12,22 +12,28 @@ The original concept artifact is `Briefklar Concept Sheet.html` (the content liv
 
 ## Stack
 
-- Python 3.11+, **Streamlit** (single app, no separate backend)
-- **Anthropic Python SDK** with a vision-capable model. Default `claude-sonnet-5-5`, and use `claude-opus-5-5` for hard or low-quality scans. Keep the model ID in one config constant.
+- Python 3.11+. **FastAPI** backend (contract: `openapi.yaml`, takes precedence per `SPEC.md`) and a **Streamlit** frontend that calls it.
+- **Anthropic Python SDK** with a vision-capable model. Default `claude-sonnet-5-5`, and use `claude-opus-5-5` for hard or low-quality scans. Keep the model ID in one config constant (`CLAUDE_MODEL` in `extractors.py`, overridable via `BRIEFKLAR_CLAUDE_MODEL`).
 - `ANTHROPIC_API_KEY` from the environment. Never hard-code or commit keys.
-- Keep dependencies minimal: `streamlit`, `anthropic`, `ics` (or a hand-written VCALENDAR), plus `pypdf`/`pdf2image` only if PDF support needs them.
+- Local OCR: **GLM-OCR** (0.9B, bf16) on Apple Silicon via `mlx-vlm`, chosen by a bake-off on the 6 MUSTER letters (see README).
+- Dependencies live in `pyproject.toml` (managed with `uv`); `requirements.txt` is exported from it with `uv export --no-hashes --no-dev --no-emit-project -o requirements.txt`. Keep both in sync.
 
-## Intended layout (create as needed)
+## Layout (flat, no package folder)
+
+Everything lives directly in the repo root; do **not** create a `briefklar/` package folder.
 
 ```
-app.py                 # Streamlit entry: upload → result → downloads; tab for city dashboard
-briefklar/
-  prompt.py            # system prompt + output schema
-  decode.py            # Claude call, parses/validates structured output
-  ics.py               # deadlines/appointments → .ics
-  knowledge/           # nuernberg.de service-page snippets (the "knowledge pack")
-  stats.py             # anonymous topic/letter-type counters for the dashboard
+api.py                 # FastAPI backend: POST /extract (done), POST /analyze (part B)
+extractors.py          # TextExtractor protocol, ClaudeVisionExtractor, LocalOcrExtractor (BRIEFKLAR_EXTRACTOR)
+ocr.py                 # GLM-OCR engine on MLX (all MLX calls run on one dedicated thread)
+app.py                 # Streamlit frontend: upload → result → downloads; tab for city dashboard
+prompt.py              # system prompt + output schema (part B)
+decode.py              # Claude call, parses/validates structured output (part B)
+stats.py               # anonymous topic/letter-type counters for the dashboard
+knowledge/             # nuernberg.de service-page snippets (the "knowledge pack")
 samples/               # fictional MUSTER letters (images/PDFs)
+scripts/               # ocr_documents.py, eval_ocr.py (OCR bake-off)
+tests/                 # pytest; ground_truth/ + key_fields.json for the 6 samples
 ```
 
 ## Core contract: structured output
@@ -63,8 +69,11 @@ Support any target language Claude handles (the pitch says 40+). The demo should
 ## Commands
 
 ```bash
-pip install -r requirements.txt
-streamlit run app.py
+uv sync                                                    # or: pip install -r requirements.txt
+uv run uvicorn api:app --port 8000                         # backend, fast lane (Claude vision)
+BRIEFKLAR_EXTRACTOR=local uv run uvicorn api:app --port 8000   # backend, on-device OCR
+uv run pytest                                              # tests (local OCR tests run GLM-OCR, ~1 min)
+streamlit run app.py                                       # frontend
 ```
 
 ## Working style for this repo

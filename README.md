@@ -75,6 +75,45 @@ streamlit run app.py
 - Guardrails: no invented links, uncertainty is flagged, users are pointed to in-person help
 
 
+### Local OCR (optional extractor, `BRIEFKLAR_EXTRACTOR=local`)
+
+Document images are read fully offline with **GLM-OCR** (0.9B, bf16) running on Apple Silicon via [MLX](https://github.com/Blaizzy/mlx-vlm). Output is Markdown.
+
+```bash
+uv sync                                  # or: pip install -r requirements.txt; installs deps (model downloads on first run, ~2 GB, into ~/.cache/huggingface)
+uv run scripts/ocr_documents.py          # OCR samples/*.png → output/ocr/*.md
+uv run pytest                            # key fields (dates, IDs, amounts, names) recognised in all sample letters
+uv run scripts/eval_ocr.py               # re-run the model bake-off (needs `brew install tesseract-lang` for the baseline)
+```
+
+```python
+from ocr import ocr_image
+print(ocr_image("samples/doc_1.png").text)
+```
+
+#### `POST /extract`
+
+```bash
+BRIEFKLAR_EXTRACTOR=local uv run uvicorn api:app --port 8000     # default extractor is "claude" (fast lane)
+curl -F file=@samples/doc_4.png localhost:8000/extract
+# → {"text": "Beitragsservice (Muster)\nRundfunkbeitrag\n…", "pages": 1, "warnings": []}
+```
+
+Accepts JPEG, PNG, HEIC and PDF (up to 10 pages, 20 MB), and returns plain text with `pages` and `warnings`. Errors follow `openapi.yaml`: `400 bad_request` for a missing, corrupt or unsupported file, `422 unreadable` when no usable text is found, and `502 upstream_error` if the Claude call fails. Uploads are processed in memory and never logged.
+
+#### Why GLM-OCR — bake-off on the 6 sample letters (M5 Pro)
+
+| Engine | word accuracy | key fields | sec/page |
+|---|---|---|---|
+| **GLM-OCR bf16, upscaled to 2048 px** (default) | **99.8 %** | **51/51** | 5.3 |
+| GLM-OCR 8-bit | 99.1 % | 50/51 | 3.5 |
+| dots.ocr 4-bit (3B) | 95.9 % | 51/51 | 5.3 |
+| PaddleOCR-VL 1.6 4-bit | 94.5 % | 45/51 | 1.7 |
+| Tesseract 5 `deu` | 92.0 % | 43/51 | 0.3 |
+
+Word accuracy is order-independent (share of ground-truth words reproduced exactly). dots.ocr drops letterheads; PaddleOCR-VL misses the reference-number block and writes "Yildiz" for "Yıldız"; Tesseract garbles IDs and `§` references. Ground truth lives in `tests/ground_truth/`, key fields in `tests/key_fields.json`.
+
+
 ## Disclaimer
 
 Briefklar is a prototype. It explains letters but does not give legal advice. All sample letters are fictional. Uploaded letters are processed in-session and never stored.
