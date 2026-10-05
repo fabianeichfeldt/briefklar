@@ -4,6 +4,7 @@ import { computed } from 'vue'
 const props = defineProps({
   message: { type: Object, required: true },
   interactive: Boolean, // stage === 'review' and not confirmed
+  scanning: Boolean, // the redacted text is being explained right now
 })
 const emit = defineEmits(['toggle', 'confirm'])
 
@@ -22,9 +23,9 @@ function label(t) {
   <div class="bubble bot wide">
     <p>
       ✅ I read your letter. This is exactly what I'll send to the AI.
-      <b>Purple = hidden</b><template v-if="live">, tap any word to hide or show it</template>.
+      <b>Violet bars are hidden</b><template v-if="live">, tap any word to hide or show it</template>.
     </p>
-    <div class="paper" :class="{ readonly: !live }" dir="ltr" style="margin-top: 8px">
+    <div class="paper" :class="{ readonly: !live, scanning }" dir="ltr" style="margin-top: 8px">
       <template v-for="(t, i) in message.tokens" :key="i">
         <span
           v-if="isWord(t)"
@@ -40,7 +41,7 @@ function label(t) {
       </template>
     </div>
     <div class="muted" style="margin-top: 6px">
-      {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden · dates &amp; amounts kept
+      {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden. Dates and amounts are kept.
     </div>
   </div>
   <div v-if="live" class="chips" style="margin-top: 2px">

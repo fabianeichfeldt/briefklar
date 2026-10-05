@@ -21,3 +21,13 @@ export const LETTER_TYPES = {
 }
 
 export const officeName = (code) => OFFICES[code] || code || 'Letter'
+
+export const LANGS = [
+  ['en', 'English'],
+  ['uk', 'Українська'],
+  ['ar', 'العربية'],
+  ['tr', 'Türkçe'],
+  ['fa', 'فارسی'],
+  ['ro', 'Română'],
+]
+export const langName = (code) => (LANGS.find(([c]) => c === code) || [, 'English'])[1]

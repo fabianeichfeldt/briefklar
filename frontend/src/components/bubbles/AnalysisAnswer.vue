@@ -7,7 +7,7 @@ const props = defineProps({
   rtl: Boolean,
 })
 
-const PILLS = { red: 'URGENT', yellow: 'SOON', green: 'INFO' }
+const PILLS = { red: 'Urgent', yellow: 'Soon', green: 'For your information' }
 
 const dir = computed(() => (props.rtl ? 'rtl' : 'ltr'))
 const office = computed(() => OFFICES[props.analysis.office] || props.analysis.office)
@@ -26,12 +26,12 @@ function left(n) {
 </script>
 
 <template>
-  <div class="bubble bot" :dir="dir">
+  <div class="bubble bot lead" :dir="dir">
     <div class="meta" dir="ltr">
-      <span class="pill" :class="analysis.light">{{ PILLS[analysis.light] }}</span>
-      <span class="muted">{{ office }}<template v-if="analysis.senderVerified"> ✓</template></span>
+      <span class="mark swipe" :class="analysis.light">{{ PILLS[analysis.light] }}</span>
+      <span class="office">{{ office }}<span v-if="analysis.senderVerified" class="verified" title="Sender checked against the official list"> ✓</span></span>
     </div>
-    <p>{{ analysis.meaning }}</p>
+    <p class="meaning">{{ analysis.meaning }}</p>
     <p v-if="analysis.answer" style="margin-top: 8px"><b>💬 </b>{{ analysis.answer }}</p>
   </div>
 
@@ -52,7 +52,7 @@ function left(n) {
     </blockquote>
     <ul v-if="analysis.otherDates?.length" class="dates">
       <li v-for="(d, i) in analysis.otherDates" :key="i">
-        <b>{{ fmt(d.date) }}</b> · {{ d.label }}
+        <bdi><b>{{ fmt(d.date) }}</b></bdi> {{ d.label }}
         <span class="muted">({{ left(d.daysLeft) }})</span>
       </li>
     </ul>

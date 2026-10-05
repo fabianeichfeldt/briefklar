@@ -1,16 +1,9 @@
 <script setup>
+import { LANGS } from '../lib/labels.js'
+
 defineProps({ showNew: Boolean, showBack: Boolean, subtitle: { type: String, default: 'explains official letters' } })
 const language = defineModel('language', { type: String, default: 'en' })
 defineEmits(['new', 'back'])
-
-const LANGS = [
-  ['en', 'English'],
-  ['uk', 'Українська'],
-  ['ar', 'العربية'],
-  ['tr', 'Türkçe'],
-  ['fa', 'فارسی'],
-  ['ro', 'Română'],
-]
 </script>
 
 <template>
@@ -22,7 +15,7 @@ const LANGS = [
       <span>{{ subtitle }}</span>
     </div>
     <div class="header-actions">
-      <button v-if="showNew" class="icon-btn" type="button" aria-label="New letter" @click="$emit('new')">＋ New</button>
+      <button v-if="showNew" class="icon-btn" type="button" aria-label="New letter" title="New letter" @click="$emit('new')">＋</button>
       <select v-model="language" class="lang" aria-label="Language">
         <option v-for="[code, name] in LANGS" :key="code" :value="code">🌐 {{ name }}</option>
       </select>
