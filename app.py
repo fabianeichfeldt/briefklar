@@ -1,11 +1,9 @@
 import datetime as dt
-import io
+import hashlib
 import streamlit as st
-import pytesseract
-from PIL import Image
-from pypdf import PdfReader
 import logic
 import llm
+from extractors import ExtractionError, LocalOcrExtractor, sniff_mime
 
 LANGS = ["English", "العربية (Arabic)", "Українська (Ukrainian)", "Türkçe (Turkish)", "Русский (Russian)",
          "Română", "فارسی (Persian)", "Español", "Français", "Polski", "Tigrinya", "Kurdî (Kurmanji)"]
@@ -20,28 +18,42 @@ lang = st.sidebar.selectbox("Your language", LANGS)
 own = st.sidebar.text_input("Your name(s), comma-separated (also blacked out)")
 
 
+@st.cache_resource
+def ocr_engine():
+    # Always on-device (GLM-OCR): this app promises nothing leaves before redaction.
+    extractor = LocalOcrExtractor()
+    extractor.warm_up()
+    return extractor
+
+
 def extract(src):
+    """Return (text, low_quality). OCR runs once per upload, not on every Streamlit rerun."""
     data = src.getvalue()
-    if src.name.lower().endswith(".pdf") if hasattr(src, "name") and src.name else False:
-        text = "\n".join(p.extract_text() or "" for p in PdfReader(io.BytesIO(data)).pages)
-        return text, len(text.strip()) < 100
-    img = Image.open(io.BytesIO(data))
-    d = pytesseract.image_to_data(img, lang="deu", output_type=pytesseract.Output.DICT)
-    confs = [float(c) for w, c in zip(d["text"], d["conf"]) if w.strip() and float(c) >= 0]
-    low = not confs or sum(confs) / len(confs) < 60
-    return pytesseract.image_to_string(img, lang="deu"), low
+    key = hashlib.sha256(data).hexdigest()
+    if st.session_state.get("ocr_key") != key:
+        try:
+            with st.spinner("Reading the letter on your device…"):
+                result = ocr_engine().extract(data, sniff_mime(data, getattr(src, "type", None)))
+            st.session_state.ocr = (result.text, bool(result.warnings))
+        except ExtractionError as e:
+            st.session_state.ocr = ("", True)
+            st.error(e.message)
+        st.session_state.ocr_key = key
+    return st.session_state.ocr
 
 
 # ---- 1 Upload ----
 st.subheader("1 · Snap or upload")
 cam = st.camera_input("Take a photo", label_visibility="collapsed")
-up = st.file_uploader("…or upload a photo / PDF", type=["png", "jpg", "jpeg", "pdf"])
+up = st.file_uploader("…or upload a photo / PDF", type=["png", "jpg", "jpeg", "heic", "pdf"])
 src = cam or up
 if not src:
     st.stop()
 
 # ---- 2 + 3 Read and black out (local) ----
 raw, low = extract(src)
+if not raw:
+    st.stop()
 if low:
     st.warning("The text is hard to read. Retake the photo flat, in good light, or the result may be wrong.")
 red, mapping = logic.redact(raw, own.split(","))

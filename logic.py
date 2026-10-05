@@ -19,12 +19,18 @@ PATTERNS = [
     ("IBAN", r"\b[A-Z]{2}\d{2}(?:\s?\d{4}){4,7}(?:\s?\d{1,4})?\b"),
     ("EMAIL", r"[\w.+-]+@[\w-]+\.[\w.-]+"),
     ("DOB", r"(?i)(?:geb(?:oren|\.)?(?:\s+am)?|geburtsdatum)[:\s]*\d{1,2}\.\d{1,2}\.\d{2,4}"),
-    ("REF", r"(?i)\b(?:aktenzeichen|az\.?|kundennummer|bg-nummer|steuernummer|steuer-id|geschäftszeichen|kindergeldnummer|ihr zeichen|unser zeichen)[^\n:]{0,20}[:\s]+[\w./-]+"),
+    # Label and value on one line only: with [:\s] the value of one line swallowed the
+    # label of the next ("BG-Nummer …\nKundennummer"), leaving that number unredacted.
+    # The value must contain a digit, so "Ihre Kindergeldnummer an." stays readable.
+    ("REF", r"(?i)\b(?:aktenzeichen|az\.?|kundennummer|bg-nummer|steuernummer|steuer-id|geschäftszeichen|kindergeld-?(?:nummer|nr\.?)|vormerk-?(?:nummer|nr\.?)|beitragsnummer|kassenzeichen|versicherungsnummer|ihr zeichen|unser zeichen)[^\n:]{0,20}?[: \t]+[\w./-]*\d[\w./-]*(?:[ \t]\d+)*"),
     ("PHONE", r"(?<!\d)(?:\+49|0049|0)[\s/()-]*\d{2,5}[\s/()-]*\d{3,}[\d\s/-]*"),
     ("TAXID", r"(?<!\d)\d{11}(?!\d)"),
     ("ADDR", r"(?m)^.*\b\d{5}\s+[A-ZÄÖÜ][\wäöüß-]+.*$"),
     ("STREET", r"(?m)^.*\b[A-ZÄÖÜ][\wäöüß.-]*(?:straße|str\.|weg|platz|allee|gasse)\s+\d+\w?.*$"),
     ("NAME", r"\b(?:Herrn?|Frau)\s+(?:(?:Dr|Prof)\.\s+)*[A-ZÄÖÜ][\wäöüß-]+(?:\s+[A-ZÄÖÜ][\wäöüß-]+){0,2}"),
+    # Children are named without Herr/Frau ("Ihr Kind Elif Yıldız", "Kind Min-jun Park, geb. …").
+    # Only the name is replaced; may also catch a capitalised noun right after "Kind" (safe side).
+    ("NAME", r"(?:(?<=\bKind )|(?<=\bKindes )|(?<=\bTochter )|(?<=\bSohn )|(?<=\bSohnes ))[A-ZÄÖÜ][\wäöüß-]+(?:[ \t]+[A-ZÄÖÜ][\wäöüß-]+){0,2}"),
 ]
 
 
@@ -48,6 +54,11 @@ def redact(text, own_names=()):
         text = re.sub(re.escape(n), sub("NAME"), text, flags=re.I)
     for label, pat in PATTERNS:
         text = re.sub(pat, sub(label), text)
+    # A surname found once ("Sehr geehrte Frau Natarajan") is redacted everywhere, with the
+    # word before it: OCR of two-column letterheads can separate "Frau" from "Priya Natarajan".
+    surnames = {v.split()[-1] for k, v in list(mapping.items()) if k.startswith("[NAME_")}
+    for s in sorted(surnames, key=len, reverse=True):
+        text = re.sub(rf"(?:\b[A-ZÄÖÜ][\wäöüß-]+[ \t]+)?\b{re.escape(s)}\b", sub("NAME"), text)
     return text, mapping
 
 
