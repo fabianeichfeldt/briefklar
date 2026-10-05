@@ -82,7 +82,11 @@ function openConversation(id) {
   if (!c) return
   clearState()
   currentId.value = c.id
-  messages.value = c.messages.map((m) => ({ ...m, id: nextId++ }))
+  messages.value = c.messages.map((m) => ({
+    ...m,
+    id: nextId++,
+    ...(m.kind === 'review' ? { explained: true } : {}), // saved chats were always answered
+  }))
   analysis.value = refreshDays(c.analysis)
   // The mapping was never saved, so drafts keep their placeholders.
   redaction.value = { text: c.redactedText, placeholders: [], mapping: {} }
@@ -229,6 +233,7 @@ function confirmRedaction() {
     withTyping(async (gen) => {
       const res = await runAnalyze(question, gen)
       if (!res) return
+      msg.explained = true // folds the redaction preview
       push({ from: 'bot', kind: 'analysis', analysis: res })
       push({ from: 'bot', kind: 'actions', actions: RESULT_CHIPS })
       stage.value = 'answered'

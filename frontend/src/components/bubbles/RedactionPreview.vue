@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   message: { type: Object, required: true },
@@ -10,6 +10,9 @@ const emit = defineEmits(['toggle', 'confirm'])
 
 const hiddenCount = computed(() => props.message.tokens.filter((t) => t.hidden).length)
 const live = computed(() => props.interactive && !props.message.confirmed)
+// Folded as soon as the LLM result arrives; the user can reopen it.
+const expanded = ref(false)
+const folded = computed(() => props.message.explained && !expanded.value)
 
 function isWord(t) {
   return /\S/.test(t.text)
@@ -20,7 +23,11 @@ function label(t) {
 </script>
 
 <template>
-  <div class="bubble bot wide">
+  <div v-if="folded" class="bubble bot redaction-folded">
+    <span>🔒 Letter redacted · {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden</span>
+    <button class="fold-toggle" type="button" :aria-expanded="false" @click="expanded = true">Show text ▾</button>
+  </div>
+  <div v-else class="bubble bot wide">
     <p>
       ✅ I read your letter. This is exactly what I'll send to the AI.
       <b>Violet bars are hidden</b><template v-if="live">, tap any word to hide or show it</template>.
@@ -42,6 +49,13 @@ function label(t) {
     </div>
     <div class="muted" style="margin-top: 6px">
       {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden. Dates and amounts are kept.
+      <button
+        v-if="message.explained"
+        class="fold-toggle"
+        type="button"
+        :aria-expanded="true"
+        @click="expanded = false"
+      >Hide text ▴</button>
     </div>
   </div>
   <div v-if="live" class="chips" style="margin-top: 2px">

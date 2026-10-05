@@ -318,6 +318,15 @@ button { cursor: pointer; }
   animation: scan 1.8s cubic-bezier(.45, 0, .55, 1) infinite;
   pointer-events: none;
 }
+/* redaction preview, folded once the letter has been explained */
+.redaction-folded { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 14px; color: var(--muted); }
+.fold-toggle {
+  border: 0; background: none; padding: 4px 2px;
+  color: var(--stamp); font: inherit; font-size: 13px; font-weight: 600;
+  cursor: pointer;
+}
+.fold-toggle:hover { text-decoration: underline; }
+
 @keyframes scan { from { top: -70px; } to { top: 100%; } }
 
 /* buttons & chips */
