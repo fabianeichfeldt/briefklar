@@ -74,13 +74,6 @@ streamlit run app.py
 - Core Claude prompt with a structured output format
 - Guardrails: no invented links, uncertainty is flagged, users are pointed to in-person help
 
-## Team
-
-We're looking for 2–3 people:
-
-- 1–2 developers (Python or web frontend)
-- Someone who knows German bureaucracy or migration counselling
-- Languages beyond German and English are a plus
 
 ## Disclaimer
 
