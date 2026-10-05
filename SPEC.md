@@ -28,6 +28,8 @@ A minimal spec that splits the build into three parts so people can work in para
 
 ## Interfaces (agree on these in the first 10 minutes)
 
+The HTTP contract is in **[`openapi.yaml`](openapi.yaml)** and takes precedence over the sketches below. **v0.2 starts with only `POST /extract` and `POST /analyze`**; redaction, follow-ups and city endpoints come later. The frontend can start against a mock right away: `npx @stoplight/prism-cli mock openapi.yaml`.
+
 These contracts are what keep the three parts independent. Until the upstream part is ready, build against the hand-redacted sample letter (`samples/muster_auslaenderbehoerde.redacted.txt`).
 
 ### Upload → A: `TextExtractor` (swappable)
@@ -41,7 +43,7 @@ class ClaudeVisionExtractor:  # fast lane, available now
 class LocalOcrExtractor:      # ocrmac / Tesseract, drop-in later
     ...
 
-EXTRACTOR = "claude"  # config switch: "claude" | "local"
+EXTRACTOR = os.getenv("BRIEFKLAR_EXTRACTOR", "claude")  # backend setting: "claude" | "local", never set by the client
 ```
 
 The rest of the pipeline only ever sees the returned string. It must not know which extractor produced it.
@@ -89,14 +91,14 @@ class Analysis:
 Built in two stages behind the `TextExtractor` interface:
 
 1. **Fast lane (start now):** `ClaudeVisionExtractor` sends the image or PDF to Claude with a strict "transcribe verbatim, don't interpret" prompt and returns plain text. This is a separate call from the analysis in part B, so the extracted text still goes through redaction before analysis.
-2. **Local OCR (later):** `LocalOcrExtractor` uses `ocrmac` on a Mac, with Tesseract (`deu` model) as the fallback. Switching to it is a single config change (`EXTRACTOR = "local"`) and needs no code changes elsewhere.
+2. **Local OCR (later):** `LocalOcrExtractor` uses `ocrmac` on a Mac, with Tesseract (`deu` model) as the fallback. Switching to it is a single config change (`BRIEFKLAR_EXTRACTOR=local`) and needs no code changes elsewhere.
 
 Redaction:
 - Redaction uses simple rules: the address block top left, the greeting and signature, birth dates, file numbers and IBANs. Deadlines and amounts are kept.
 - The module returns a `RedactedLetter`, and C shows a preview of exactly the text that will be sent.
 
 **Done when (fast lane):** all six MUSTER letters are transcribed by Claude and redacted, with no name, address or file number left in the text passed to part B.
-**Done when (local OCR):** the same six letters come out of local OCR just as readable, and `EXTRACTOR = "local"` is the default.
+**Done when (local OCR):** the same six letters come out of local OCR just as readable, and `BRIEFKLAR_EXTRACTOR=local` is the default.
 
 ## B. LLM: understand, explain, urgency
 

@@ -1,0 +1,281 @@
+openapi: 3.1.0
+info:
+  title: Briefklar API
+  version: 0.2.0
+  description: |
+    Minimal first contract: two endpoints.
+
+    | Part | Implements |
+    |---|---|
+    | A. OCR | `POST /extract` |
+    | B. LLM | `POST /analyze` |
+    | C. Frontend | calls both |
+
+    **Pipeline:** upload → `POST /extract` → `POST /analyze` → show result.
+
+    **Extractor is a backend setting** (`BRIEFKLAR_EXTRACTOR=claude|local`, default `claude`).
+    Clients cannot choose it, and the API looks the same either way.
+    Fast lane (`claude`) sends the raw image to Claude, so use MUSTER letters only.
+
+    Not in this version yet: redaction, follow-up threads, city events and stats.
+
+    **Mocking:** `npx @stoplight/prism-cli mock openapi.yaml` (serves on http://127.0.0.1:4010).
+security: []  # local hackathon prototype, no auth
+servers:
+  - url: http://localhost:8000
+    description: Local backend (FastAPI)
+  - url: http://127.0.0.1:4010
+    description: Prism mock
+
+tags:
+  - name: ocr
+    description: Part A. Text extraction.
+  - name: llm
+    description: Part B. Understanding, explanation, deadline, traffic light.
+
+paths:
+  /extract:
+    post:
+      tags: [ocr]
+      operationId: extractText
+      summary: Extract raw German text from a photo or PDF
+      description: |
+        Verbatim transcription, no interpretation. Which extractor runs is decided by the
+        backend config, not by the request.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG, PNG, HEIC or PDF
+      responses:
+        '200':
+          description: Extracted text
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractResponse'
+              example:
+                text: |
+                  Stadt Nürnberg · Ausländerbehörde
+                  Max Mustermann, Musterstraße 1, 90402 Nürnberg
+                  Aktenzeichen: AB-2026/48213-P
+                  Sehr geehrter Herr Mustermann,
+                  Ihr Aufenthaltstitel ist gültig bis 15.11.2026. Für die Verlängerung ist eine persönliche Vorsprache erforderlich.
+                  Termin: 20.10.2026, 09:30 Uhr, Zimmer 2.14.
+                  Eine Absage oder Verlegung ist bis zum 13.10.2026 möglich.
+                  Mit freundlichen Grüßen
+                  i. A. Schmidt
+                pages: 1
+                warnings: []
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/Unreadable' }
+
+  /analyze:
+    post:
+      tags: [llm]
+      operationId: analyzeLetter
+      summary: Explain a letter and set the traffic light
+      description: |
+        One Claude call grounded in the saved Nuremberg pages. Claude returns the deadline
+        date and its source sentence; the server computes `light` from today's date:
+        overdue or ≤ 14 days → red, later → yellow, no deadline → green,
+        unsure (no date found or sender not verified) → yellow.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+            example:
+              text: "Stadt Nürnberg · Ausländerbehörde\nMax Mustermann, Musterstraße 1, 90402 Nürnberg\n…"
+              language: en
+              question: Do I have to go there in person?
+      responses:
+        '200':
+          description: Explanation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+              example:
+                today: '2026-10-05'
+                light: red
+                lightReason: Deadline in 8 days (≤ 14 days)
+                deadline:
+                  date: '2026-10-13'
+                  daysLeft: 8
+                  kind: frist
+                  label: Last day to cancel or move the appointment
+                  sourceSentence: Eine Absage oder Verlegung ist bis zum 13.10.2026 möglich.
+                otherDates:
+                  - date: '2026-10-20'
+                    daysLeft: 15
+                    kind: appointment
+                    label: Appointment, 09:30, room 2.14
+                    sourceSentence: 'Termin: 20.10.2026, 09:30 Uhr, Zimmer 2.14.'
+                  - date: '2026-11-15'
+                    daysLeft: 41
+                    kind: expiry
+                    label: Current residence permit expires
+                    sourceSentence: Ihr Aufenthaltstitel ist gültig bis 15.11.2026.
+                meaning: Your residence permit expires soon. You have an appointment to extend it.
+                answer: Yes. The letter asks for a "persönliche Vorsprache", which means you must go in person.
+                steps:
+                  - Note the appointment on 20.10.2026 at 09:30, room 2.14.
+                  - If you can't make it, cancel or move it before 13.10.2026.
+                documents:
+                  - Passport
+                  - Biometric photo
+                  - Work contract and 3 recent payslips
+                  - Proof of health insurance
+                  - Rental contract
+                sources:
+                  - title: Aufenthaltserlaubnis verlängern – Stadt Nürnberg
+                    url: https://www.nuernberg.de/
+                glossary:
+                  - { term: Aufenthaltstitel, explanation: residence permit }
+                  - { term: Vorsprache, explanation: in-person visit }
+                  - { term: Fortgeltungswirkung, explanation: your permit stays valid while you wait for the decision }
+                draftDe: |
+                  Sehr geehrte Damen und Herren,
+                  leider kann ich den Termin am 20.10.2026 um 09:30 Uhr nicht wahrnehmen. Ich bitte um einen neuen Termin.
+                  Aktenzeichen: AB-2026/48213-P
+                  Mit freundlichen Grüßen
+                  Max Mustermann
+                office: auslaenderbehoerde
+                letterType: appointment_invitation
+                senderVerified: true
+                uncertainties: []
+                disclaimer: Explains, does not advise. Check the deadline against your letter.
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
+
+components:
+  schemas:
+    ExtractResponse:
+      type: object
+      required: [text, pages]
+      properties:
+        text: { type: string, description: 'Raw German letter text, verbatim' }
+        pages: { type: integer, minimum: 1 }
+        warnings:
+          type: array
+          items: { type: string }
+          description: e.g. "page 2 partly unreadable"
+
+    AnalyzeRequest:
+      type: object
+      required: [text]
+      properties:
+        text: { type: string, description: Letter text as returned by `/extract` }
+        language:
+          type: string
+          default: en
+          description: BCP-47 code for the explanation. Only `en` today; `draftDe` is always German.
+        question:
+          type: [string, 'null']
+          description: Optional question from the upload screen
+
+    Light:
+      type: string
+      enum: [red, yellow, green]
+
+    DateKind:
+      type: string
+      enum: [frist, appointment, expiry, payment, other]
+
+    DatedItem:
+      type: object
+      required: [date, daysLeft, kind, label, sourceSentence]
+      properties:
+        date: { type: string, format: date }
+        daysLeft: { type: integer, description: Computed by the server from `today`. Negative = overdue. }
+        kind: { $ref: '#/components/schemas/DateKind' }
+        label: { type: string }
+        sourceSentence: { type: string, description: Exact sentence from the letter }
+
+    Source:
+      type: object
+      required: [title, url]
+      properties:
+        title: { type: string }
+        url: { type: string, format: uri, description: Only from the saved Nuremberg pages }
+
+    Office:
+      type: string
+      enum: [auslaenderbehoerde, jobcenter, sozialamt, buergeramt, kita_schule, finanzamt, familienkasse, rundfunkbeitrag, other]
+
+    LetterType:
+      type: string
+      enum: [appointment_invitation, document_request, decision, payment_request, reminder, information, other]
+
+    Analysis:
+      type: object
+      required: [today, light, lightReason, meaning, steps, documents, sources, draftDe, office, letterType, senderVerified, uncertainties, disclaimer]
+      properties:
+        today: { type: string, format: date, description: Date the traffic light was computed against }
+        light: { $ref: '#/components/schemas/Light' }
+        lightReason: { type: string }
+        deadline:
+          description: The deadline that drives the traffic light. Null if none found.
+          oneOf:
+            - $ref: '#/components/schemas/DatedItem'
+            - type: 'null'
+        otherDates:
+          type: array
+          items: { $ref: '#/components/schemas/DatedItem' }
+        meaning: { type: string, description: One-paragraph plain explanation in `language` }
+        answer:
+          type: [string, 'null']
+          description: Answer to `question`, if one was asked
+        steps: { type: array, items: { type: string } }
+        documents: { type: array, items: { type: string } }
+        sources: { type: array, items: { $ref: '#/components/schemas/Source' } }
+        glossary:
+          type: array
+          items:
+            type: object
+            required: [term, explanation]
+            properties:
+              term: { type: string, description: German term as in the letter }
+              explanation: { type: string }
+        draftDe: { type: string, description: German reply draft }
+        office: { $ref: '#/components/schemas/Office' }
+        letterType: { $ref: '#/components/schemas/LetterType' }
+        senderVerified: { type: boolean, description: True only for city offices covered by our sources }
+        uncertainties: { type: array, items: { type: string } }
+        disclaimer: { type: string }
+
+    Error:
+      type: object
+      required: [code, message]
+      properties:
+        code: { type: string }
+        message: { type: string }
+
+  responses:
+    BadRequest:
+      description: Invalid input
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: bad_request, message: Unsupported file type }
+    Unreadable:
+      description: No usable text could be extracted
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: unreadable, message: Please take a sharper photo with the whole page visible. }
+    UpstreamError:
+      description: Claude call failed or returned an invalid format
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { code: upstream_error, message: 'Analysis failed, please retry.' }
