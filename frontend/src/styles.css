@@ -374,7 +374,7 @@ button { cursor: pointer; }
   border: 0; background: none;
   font-size: 16px; opacity: .55;
 }
-.letters-empty { padding: 48px 24px; text-align: center; color: var(--muted); }
+.letters-empty { padding: 40px 24px; text-align: center; color: var(--muted); }
 .clear-all {
   display: block;
   margin: 20px auto 0;
@@ -396,3 +396,19 @@ button { cursor: pointer; }
   box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
 }
 .fab span { font-size: 16px; }
+.letters-empty h1 { margin: 0 0 8px; font-size: 22px; line-height: 1.25; color: var(--ink); }
+.letters-empty p { margin: 0 0 20px; }
+.empty-icon {
+  width: 84px; height: 84px; margin: 0 auto 16px;
+  border-radius: 50%; background: var(--chat-bg);
+  display: grid; place-items: center; font-size: 40px;
+}
+.empty-primary, .empty-secondary {
+  display: block; width: 100%;
+  min-height: 52px; margin-bottom: 10px;
+  border-radius: 16px; font-weight: 700; font-size: 16px;
+}
+.empty-primary { border: 0; background: var(--ink); color: #fff; min-height: 58px; font-size: 18px; }
+.empty-secondary { border: 1.5px solid var(--ink); background: #fff; }
+.empty-secondary.dashed { border-style: dashed; }
+.letters-empty .empty-hint { margin-top: 18px; font-size: 13px; }

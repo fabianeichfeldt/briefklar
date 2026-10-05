@@ -17,7 +17,7 @@ const redaction = ref(null)
 const pendingQuestion = ref('')
 const history = ref(loadHistory()) // newest first
 const currentId = ref(null) // id of the saved conversation being shown, null until first answer
-const view = ref(history.value.length ? 'list' : 'chat')
+const view = ref('list') // the letter list is the home screen
 
 let nextId = 1
 let generation = 0 // bumped on reset so stale responses are ignored

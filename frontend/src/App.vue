@@ -14,9 +14,9 @@ const uploadInput = ref(null)
 const thread = ref(null)
 
 const showNew = computed(() => view.value === 'chat' && stage.value !== 'start')
-const showBack = computed(() => view.value === 'chat' && history.value.length > 0)
+const showBack = computed(() => view.value === 'chat')
 const subtitle = computed(() =>
-  view.value === 'list' ? `${history.value.length} letter${history.value.length === 1 ? '' : 's'}` : 'explains official letters'
+  view.value === 'list' && history.value.length ? `${history.value.length} letter${history.value.length === 1 ? '' : 's'}` : 'explains official letters'
 )
 
 function openCamera() { cameraInput.value?.click() }
@@ -26,7 +26,7 @@ function onFile(e) {
   const file = e.target.files?.[0]
   e.target.value = '' // allow picking the same file again
   if (!file) return
-  if (stage.value === 'review' || stage.value === 'answered') reset()
+  if (view.value === 'list' || stage.value === 'review' || stage.value === 'answered') reset()
   startWithFile(file)
 }
 </script>
@@ -41,7 +41,7 @@ function onFile(e) {
       @new="reset"
       @back="showList"
     />
-    <ChatList v-if="view === 'list'" @new="reset" />
+    <ChatList v-if="view === 'list'" @new="reset" @camera="openCamera" @upload="openUpload" />
     <template v-else>
       <DeadlineBanner v-if="analysis" :analysis="analysis" @select="thread?.scrollToAnalysis()" />
       <ChatThread ref="thread" @camera="openCamera" @upload="openUpload" />

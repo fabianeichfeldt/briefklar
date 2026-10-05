@@ -4,8 +4,13 @@ import { useConversation } from '../composables/useConversation.js'
 import { officeName, LETTER_TYPES } from '../lib/labels.js'
 import { refreshDays } from '../lib/history.js'
 
-const emit = defineEmits(['new'])
-const { history, openConversation, deleteConversation, clearHistory } = useConversation()
+const emit = defineEmits(['new', 'camera', 'upload'])
+const { history, openConversation, deleteConversation, clearHistory, reset, startWithSample } = useConversation()
+
+function trySample() {
+  reset()
+  startWithSample()
+}
 
 const OFFICE_ICONS = {
   auslaenderbehoerde: '🛂', jobcenter: '💼', sozialamt: '🤝', buergeramt: '🏛️', kita_schule: '🎒',
@@ -84,11 +89,17 @@ function confirmClear() {
     </ul>
 
     <div v-else class="letters-empty">
-      <p>No letters yet.</p>
+      <div class="empty-icon" aria-hidden="true">✉️</div>
+      <h1>Understand letters from German offices</h1>
+      <p>Take a photo of a letter. You get a plain explanation in your language, every deadline, what to do and a German reply.</p>
+      <button class="empty-primary" type="button" @click="emit('camera')">📸 Photograph a letter</button>
+      <button class="empty-secondary" type="button" @click="emit('upload')">🖼️ Upload photo / PDF</button>
+      <button class="empty-secondary dashed" type="button" @click="trySample">🧪 Try a MUSTER letter</button>
+      <p class="empty-hint">Your letters will appear here.</p>
     </div>
 
     <button v-if="rows.length" class="clear-all" type="button" @click="confirmClear">Delete all letters</button>
 
-    <button class="fab" type="button" aria-label="New letter" @click="emit('new')">📸<span>New letter</span></button>
+    <button v-if="rows.length" class="fab" type="button" aria-label="New letter" @click="emit('new')">📸<span>New letter</span></button>
   </main>
 </template>
