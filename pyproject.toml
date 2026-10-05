@@ -7,10 +7,12 @@ requires-python = ">=3.11"
 dependencies = [
     "anthropic>=1.11.0",
     "fastapi>=0.142.2",
+    "holidays>=0.105",
     "mlx-vlm>=0.7",
     "pillow",
     "pillow-heif>=1.8.0",
     "pypdfium2>=5.14.0",
+    "python-dateutil>=2.9.0.post0",
     "python-multipart>=0.0.32",
     "uvicorn>=0.54.0",
 ]

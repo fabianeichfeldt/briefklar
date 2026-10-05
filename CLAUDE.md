@@ -23,7 +23,11 @@ The original concept artifact is `Briefklar Concept Sheet.html` (the content liv
 Everything lives directly in the repo root; do **not** create a `briefklar/` package folder.
 
 ```
-api.py                 # FastAPI backend: POST /extract (done), POST /analyze (part B)
+api.py                 # FastAPI backend: POST /extract, POST /analyze
+analysis.py            # glue for /analyze: llm.py output + logic.py dates/light → openapi Analysis
+llm.py                 # Claude calls: analyze() and ask() (part B)
+logic.py               # deterministic layer: redaction, deadline math, traffic light, .ics
+frontend/              # Vue 3 + Vite mobile chat UI (the demo path); proxies /api → :8000
 extractors.py          # TextExtractor protocol, ClaudeVisionExtractor, LocalOcrExtractor (BRIEFKLAR_EXTRACTOR)
 ocr.py                 # GLM-OCR engine on MLX (all MLX calls run on one dedicated thread)
 app.py                 # Streamlit frontend: upload → result → downloads; tab for city dashboard
@@ -69,6 +73,7 @@ Support any target language Claude handles (the pitch says 40+). The demo should
 ## Commands
 
 ```bash
+./dev.sh                                                   # backend :8000 + frontend :5173 together (open http://localhost:5173)
 uv sync                                                    # or: pip install -r requirements.txt
 uv run uvicorn api:app --port 8000                         # backend, fast lane (Claude vision)
 BRIEFKLAR_EXTRACTOR=local uv run uvicorn api:app --port 8000   # backend, on-device OCR

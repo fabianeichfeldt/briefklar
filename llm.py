@@ -40,6 +40,11 @@ def _system(lang):
     )
 
 
+def _text(r):
+    # Sonnet 5.5 thinks by default, so content[0] can be a thinking block.
+    return "".join(b.text for b in r.content if b.type == "text")
+
+
 def _json(text):
     return json.loads(text[text.index("{"): text.rindex("}") + 1])
 
@@ -49,7 +54,7 @@ def analyze(redacted_text, lang):
         model=MODEL, max_tokens=3000, system=_system(lang),
         messages=[{"role": "user", "content": f"Letter (redacted):\n\n{redacted_text}"}],
     )
-    return _json(r.content[0].text)
+    return _json(_text(r))
 
 
 def ask(redacted_text, redacted_question, lang):
@@ -60,4 +65,4 @@ def ask(redacted_text, redacted_question, lang):
                 "Placeholders like [NAME_1] stay as they are."),
         messages=[{"role": "user", "content": f"Letter:\n{redacted_text}\n\nQuestion: {redacted_question}"}],
     )
-    return r.content[0].text
+    return _text(r)

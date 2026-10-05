@@ -62,11 +62,11 @@ The city sees which **topics and letter types** cause confusion, for example res
 ## Getting started
 
 ```bash
-python -m venv .venv && source .venv/bin/activate
-pip install -r requirements.txt
 export ANTHROPIC_API_KEY=sk-ant-...
-streamlit run app.py
+./dev.sh          # FastAPI backend on :8000 + Vue frontend on :5173
 ```
+
+Open http://localhost:5173 (or `http://<your-LAN-IP>:5173` on a phone). Use `BRIEFKLAR_EXTRACTOR=local ./dev.sh` for on-device OCR.
 
 ## Prepared before the build
 
