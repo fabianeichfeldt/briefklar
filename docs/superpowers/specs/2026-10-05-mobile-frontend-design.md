@@ -62,7 +62,7 @@ frontend/
   tests/redact.test.js  # vitest
 ```
 
-`VITE_API_BASE` sets the backend URL, default `http://127.0.0.1:4010` (Prism mock: `npx @stoplight/prism-cli mock openapi.yaml`). `npm run dev -- --host` to open it on a phone in the same Wi-Fi.
+The browser calls same-origin `/api`; the Vite dev server proxies it to `API_TARGET` (default `http://127.0.0.1:4010`, the Prism mock: `npx @stoplight/prism-cli mock openapi.yaml`; use `API_TARGET=http://localhost:8000` for the FastAPI backend). `VITE_API_BASE` overrides the base URL entirely. The dev server binds all interfaces, so teammates open `http://<your-LAN-IP>:5173`.
 
 ## Interfaces
 

@@ -1,5 +1,5 @@
 // Thin client for the Briefklar API (see openapi.yaml). Never logs letter text.
-const BASE = import.meta.env.VITE_API_BASE ?? 'http://127.0.0.1:4010'
+const BASE = import.meta.env.VITE_API_BASE ?? '/api' // dev: proxied by Vite to API_TARGET
 const TIMEOUT_MS = 60000
 
 export class ApiError extends Error {
