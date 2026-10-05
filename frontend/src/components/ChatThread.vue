@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useConversation } from '../composables/useConversation.js'
 import RedactionPreview from './bubbles/RedactionPreview.vue'
 import AnalysisAnswer from './bubbles/AnalysisAnswer.vue'
+import OverviewAnswer from './bubbles/OverviewAnswer.vue'
 import DraftDe from './bubbles/DraftDe.vue'
 import Glossary from './bubbles/Glossary.vue'
 import Sources from './bubbles/Sources.vue'
@@ -21,6 +22,7 @@ const rtl = computed(() => language.value === 'ar' || language.value === 'fa')
 const typingLabel = computed(() => {
   if (stage.value === 'extracting') return 'Reading your letter'
   if (stage.value === 'analyzing') return `Explaining it in ${langName(language.value)}`
+  if (stage.value === 'detailing') return 'Writing the full explanation'
   return 'Looking at your question'
 })
 
@@ -42,7 +44,7 @@ watch(() => [messages.value.length, lastId.value], toBottom, { flush: 'post' })
 onMounted(() => nextTick(() => requestAnimationFrame(() => { if (el.value) el.value.scrollTop = el.value.scrollHeight })))
 
 function scrollToAnalysis() {
-  const nodes = el.value?.querySelectorAll('[data-kind="analysis"]')
+  const nodes = el.value?.querySelectorAll('[data-kind="analysis"], [data-kind="overview"]')
   const node = nodes && nodes[nodes.length - 1]
   node?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
@@ -79,6 +81,7 @@ function onAction(id) {
         @confirm="confirmRedaction"
       />
 
+      <OverviewAnswer v-else-if="m.kind === 'overview'" :analysis="m.analysis" :rtl="rtl" />
       <AnalysisAnswer v-else-if="m.kind === 'analysis'" :analysis="m.analysis" :rtl="rtl" />
 
       <div v-else-if="m.kind === 'answer'" class="bubble bot" :dir="rtl ? 'rtl' : 'ltr'">{{ m.text }}</div>

@@ -3,7 +3,7 @@
 // placeholder → original mapping, so real names and addresses don't end up on disk.
 
 const KEY = 'briefklar.history.v1'
-const SAVED_KINDS = new Set(['text', 'photo', 'review', 'analysis', 'answer', 'draft', 'glossary', 'sources'])
+const SAVED_KINDS = new Set(['text', 'photo', 'review', 'overview', 'analysis', 'answer', 'draft', 'glossary', 'sources'])
 
 export function loadHistory(storage = globalThis.localStorage) {
   try {

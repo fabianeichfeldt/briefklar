@@ -1,4 +1,5 @@
-"""Briefklar backend (contract: openapi.yaml): POST /extract (OCR) and POST /analyze (LLM).
+"""Briefklar backend (contract: openapi.yaml): POST /extract (OCR), POST /overview (fast LLM)
+and POST /analyze (full LLM).
 
     uv run uvicorn api:app --port 8000                              # fast lane (Claude vision)
     BRIEFKLAR_EXTRACTOR=local uv run uvicorn api:app --port 8000    # on-device OCR
@@ -50,7 +51,7 @@ async def extraction_error(request: Request, exc: ExtractionError) -> JSONRespon
 
 @app.exception_handler(RequestValidationError)
 async def validation_error(request: Request, exc: RequestValidationError) -> JSONResponse:
-    if request.url.path == "/analyze":
+    if request.url.path in ("/analyze", "/overview"):
         return _error(400, "bad_request", "Please send JSON with the letter text: {text, language, question}.")
     return _error(400, "bad_request", "Please upload a file in the 'file' field.")
 
@@ -66,13 +67,27 @@ def extract_text(file: UploadFile = File(...)) -> ExtractResponse:
     return ExtractResponse(text=result.text, pages=result.pages, warnings=result.warnings)
 
 
-@app.post("/analyze", tags=["llm"], operation_id="analyzeLetter")
-def analyze_letter(body: AnalyzeRequest) -> dict:
+def _letter_text(body: AnalyzeRequest) -> str:
     text = body.text.strip()
     if not text:
         raise BadRequest("The letter text is empty.")
     if len(text) > MAX_TEXT_CHARS:
         raise BadRequest("The letter text is too long.")
+    return text
+
+
+@app.post("/overview", tags=["llm"], operation_id="overviewLetter")
+def overview_letter(body: AnalyzeRequest) -> dict:
+    text = _letter_text(body)
+    try:
+        return analysis.overview(text, language=body.language)
+    except Exception as exc:  # Claude errors and unparsable model output; content is not logged
+        raise UpstreamError("Analysis failed, please retry.") from exc
+
+
+@app.post("/analyze", tags=["llm"], operation_id="analyzeLetter")
+def analyze_letter(body: AnalyzeRequest) -> dict:
+    text = _letter_text(body)
     try:
         return analysis.analyze(text, language=body.language, question=body.question)
     except Exception as exc:  # Claude errors and unparsable model output; content is not logged

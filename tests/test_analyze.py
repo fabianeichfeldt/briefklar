@@ -84,3 +84,31 @@ def test_endpoint_errors(monkeypatch):
     monkeypatch.setitem(sys.modules, "llm", fake)
     r = client.post("/analyze", json={"text": "Brieftext"})
     assert r.status_code == 502 and r.json()["code"] == "upstream_error"
+
+
+OVERVIEW_RESULT = {k: LLM_RESULT[k] for k in
+                   ("letter_type", "letter_date", "formal_service", "deadline_search_complete",
+                    "deadlines", "office_ids", "escalate_to_human")}
+OVERVIEW_RESULT |= {"summary": "The Ausländerbehörde invites you to extend your permit.",
+                    "action_needed": True, "next_step": "Go to the appointment on 20.10.2026."}
+
+
+def test_overview_has_same_light_and_deadline_as_full_analysis():
+    o = analysis.to_overview(OVERVIEW_RESULT, "Termin ...", TODAY)
+    a = analysis.to_analysis(LLM_RESULT, "Termin ...", TODAY)
+    assert REQUIRED <= o.keys()
+    assert o["depth"] == "overview" and a["depth"] == "full"
+    assert (o["light"], o["deadline"]) == (a["light"], a["deadline"])
+    assert o["actionNeeded"] is True
+    assert o["steps"] == ["Go to the appointment on 20.10.2026."]
+    assert o["draftDe"] == "" and o["documents"] == [] and o["glossary"] == []
+
+
+def test_overview_endpoint(monkeypatch):
+    fake = types.ModuleType("llm")
+    fake.overview = lambda text, lang: {**OVERVIEW_RESULT, "action_needed": False, "next_step": None}
+    monkeypatch.setitem(sys.modules, "llm", fake)
+    r = client.post("/overview", json={"text": "Brieftext", "language": "tr"})
+    assert r.status_code == 200
+    assert r.json()["actionNeeded"] is False and r.json()["steps"] == []
+    assert client.post("/overview", json={"text": " "}).json()["code"] == "bad_request"

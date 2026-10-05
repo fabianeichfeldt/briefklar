@@ -48,6 +48,15 @@ export function extractText(file) {
   return request('/extract', { method: 'POST', body: form })
 }
 
+// Quick first look (small model): same shape as analyzeLetter, depth 'overview'.
+export function overviewLetter({ text, language = 'en' }) {
+  return request('/overview', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ text, language }),
+  })
+}
+
 export function analyzeLetter({ text, language = 'en', question = null }) {
   return request('/analyze', {
     method: 'POST',

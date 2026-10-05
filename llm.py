@@ -4,6 +4,7 @@ import anthropic
 from logic import OFFICES
 
 MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+FAST_MODEL = os.getenv("ANTHROPIC_FAST_MODEL", "claude-haiku-4-5-20251001")  # quick overview
 client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
 
 SCHEMA = """{
@@ -26,7 +27,26 @@ SCHEMA = """{
 }"""
 
 
-def _system(lang):
+# Quick first look: what is it, how urgent, do I have to act. Same deadline format as SCHEMA,
+# so logic.py computes the dates and the traffic light exactly like for the full analysis.
+OVERVIEW_SCHEMA = """{
+ "letter_type": "bescheid_rejection|bescheid_approval|invitation|reminder|request_documents|info_only|other",
+ "summary": "ONE short sentence in USER_LANG: who wrote and what they want",
+ "action_needed": true,
+ "next_step": "the single most important thing to do, one short sentence in USER_LANG, or null",
+ "letter_date": "YYYY-MM-DD or null",
+ "formal_service": false,
+ "deadline_search_complete": true,
+ "deadlines": [{"kind": "objection|response|appointment|payment|submission",
+   "rule": "fixed_date|days_from_letter|days_from_bekanntgabe|months_from_bekanntgabe",
+   "fixed_date": "YYYY-MM-DD or null", "amount": 1, "unit": "days|weeks|months|null",
+   "source_quote_de": "exact German sentence from the letter", "confidence": "high|medium|low"}],
+ "office_ids": ["ids from the allowed list only"],
+ "escalate_to_human": {"flag": false, "reason": null}
+}"""
+
+
+def _system(lang, schema=SCHEMA):
     offices = "\n".join(f"- {k}: {v['name']}" for k, v in OFFICES.items())
     return (
         "You explain German official letters to people who do not read German well. "
@@ -36,7 +56,7 @@ def _system(lang):
         "Set deadline_search_complete=false if the text looks cut off or unreadable. "
         "Flag escalate_to_human for objections, residence-status decisions, benefit cuts or repayments.\n"
         f"USER_LANG = {lang}\nAllowed office ids:\n{offices}\n"
-        f"Return ONLY JSON, no markdown, matching:\n{SCHEMA}"
+        f"Return ONLY JSON, no markdown, matching:\n{schema}"
     )
 
 
@@ -52,6 +72,14 @@ def _json(text):
 def analyze(redacted_text, lang):
     r = client.messages.create(
         model=MODEL, max_tokens=3000, system=_system(lang),
+        messages=[{"role": "user", "content": f"Letter (redacted):\n\n{redacted_text}"}],
+    )
+    return _json(_text(r))
+
+
+def overview(redacted_text, lang):
+    r = client.messages.create(
+        model=FAST_MODEL, max_tokens=1000, system=_system(lang, OVERVIEW_SCHEMA),
         messages=[{"role": "user", "content": f"Letter (redacted):\n\n{redacted_text}"}],
     )
     return _json(_text(r))

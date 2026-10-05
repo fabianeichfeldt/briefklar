@@ -11,7 +11,8 @@ info:
     | B. LLM | `POST /analyze` |
     | C. Frontend | calls both |
 
-    **Pipeline:** upload → `POST /extract` → `POST /analyze` → show result.
+    **Pipeline:** upload → `POST /extract` → `POST /overview` (fast, shown first) and
+    `POST /analyze` (full, shown on "Explain in detail") → show result.
 
     **Extractor is a backend setting** (`BRIEFKLAR_EXTRACTOR=claude|local`, default `claude`).
     Clients cannot choose it, and the API looks the same either way.
@@ -76,6 +77,33 @@ paths:
                 warnings: []
         '400': { $ref: '#/components/responses/BadRequest' }
         '422': { $ref: '#/components/responses/Unreadable' }
+
+  /overview:
+    post:
+      tags: [llm]
+      operationId: overviewLetter
+      summary: Quick first look at a letter (small, fast model)
+      description: |
+        Same request and response shape as `/analyze`, with `depth: overview`. The server
+        computes `light` and `deadline` the same way, so the countdown matches the full
+        analysis. `meaning` is one sentence, `steps` holds at most the single next step, and
+        `actionNeeded` says if the user has to do anything. Draft, glossary, documents and
+        sources stay empty: call `/analyze` for those.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeRequest'
+      responses:
+        '200':
+          description: Overview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Analysis'
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '502': { $ref: '#/components/responses/UpstreamError' }
 
   /analyze:
     post:
@@ -252,6 +280,13 @@ components:
         senderVerified: { type: boolean, description: True only for city offices covered by our sources }
         uncertainties: { type: array, items: { type: string } }
         disclaimer: { type: string }
+        depth:
+          type: string
+          enum: [overview, full]
+          description: '`overview` from `/overview`, `full` from `/analyze`'
+        actionNeeded:
+          type: boolean
+          description: Only on `/overview`. Does the user have to do something?
 
     Error:
       type: object

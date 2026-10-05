@@ -116,7 +116,22 @@ def to_analysis(res: dict, redacted_text: str, today: dt.date, answer: str | Non
         "senderVerified": any(o in CITY_OFFICES for o in office_ids),
         "uncertainties": uncertainties,
         "disclaimer": DISCLAIMER,
+        "depth": "full",
     }
+
+
+def to_overview(res: dict, redacted_text: str, today: dt.date) -> dict:
+    """Map the llm.overview() JSON to an `Analysis` with depth=overview: same light and dates,
+    one-sentence meaning, at most one step, no draft/glossary/documents."""
+    a = to_analysis({**res, "actions": [res["next_step"]] if res.get("next_step") else []},
+                    redacted_text, today)
+    return {**a, "depth": "overview", "actionNeeded": bool(res.get("action_needed", True))}
+
+
+def overview(text: str, language: str = "en", today: dt.date | None = None) -> dict:
+    import llm
+
+    return to_overview(llm.overview(text, language_name(language)), text, today or dt.date.today())
 
 
 def analyze(text: str, language: str = "en", question: str | None = None,

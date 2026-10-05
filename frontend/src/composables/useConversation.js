@@ -1,5 +1,5 @@
-import { ref } from 'vue'
-import { extractText, analyzeLetter, ApiError } from '../lib/api.js'
+import { ref, watch } from 'vue'
+import { extractText, overviewLetter, analyzeLetter, ApiError } from '../lib/api.js'
 import { downscaleImage } from '../lib/image.js'
 import { redact, fillPlaceholders, tokenize } from '../lib/redact.js'
 import { SAMPLE_LETTER_TEXT } from '../lib/sample.js'
@@ -18,10 +18,29 @@ const pendingQuestion = ref('')
 const history = ref(loadHistory()) // newest first
 const currentId = ref(null) // id of the saved conversation being shown, null until first answer
 const view = ref('list') // the letter list is the home screen
+// On: the on-device redaction is sent straight away. Off: the user reviews it first.
+const AUTO_REDACT_KEY = 'briefklar.autoRedact'
+const autoRedact = ref(readSetting(AUTO_REDACT_KEY, true))
+watch(autoRedact, (v) => writeSetting(AUTO_REDACT_KEY, v))
+
+function readSetting(key, fallback) {
+  try {
+    const v = globalThis.localStorage?.getItem(key)
+    return v === null || v === undefined ? fallback : JSON.parse(v)
+  } catch {
+    return fallback
+  }
+}
+function writeSetting(key, value) {
+  try {
+    globalThis.localStorage?.setItem(key, JSON.stringify(value))
+  } catch {}
+}
 
 let nextId = 1
 let generation = 0 // bumped on reset so stale responses are ignored
 let lastAction = null // () => Promise, re-run by retry()
+let fullRequest = null // full /analyze, prefetched while the quick overview is shown
 const objectUrls = []
 
 const START_ACTIONS = [
@@ -29,6 +48,7 @@ const START_ACTIONS = [
   { id: 'upload', label: '🖼️ Upload photo / PDF' },
   { id: 'sample', label: '🧪 Try a MUSTER letter' },
 ]
+const DETAIL_CHIPS = [{ id: 'detail', label: '🔎 Explain in detail', primary: true }]
 const RESULT_CHIPS = [
   { id: 'draft', label: '✉️ Reply in German' },
   { id: 'glossary', label: '📖 German words' },
@@ -90,7 +110,7 @@ function openConversation(id) {
   analysis.value = refreshDays(c.analysis)
   // The mapping was never saved, so drafts keep their placeholders.
   redaction.value = { text: c.redactedText, placeholders: [], mapping: {} }
-  push({ from: 'bot', kind: 'actions', actions: RESULT_CHIPS })
+  push({ from: 'bot', kind: 'actions', actions: analysis.value.depth === 'overview' ? DETAIL_CHIPS : RESULT_CHIPS })
   stage.value = 'answered'
   view.value = 'chat'
 }
@@ -150,8 +170,13 @@ function showReview(text) {
       ? { text: t.text, hidden: true, placeholder: t.placeholder }
       : { text: t.text, hidden: false }
   )
-  push({ from: 'bot', kind: 'review', tokens, confirmed: false })
+  push({ from: 'bot', kind: 'review', tokens, confirmed: false, auto: autoRedact.value })
   stage.value = 'review'
+}
+
+// With auto-redact on, the review step is skipped and the redacted text is sent right away.
+function autoConfirm() {
+  if (autoRedact.value && stage.value === 'review') confirmRedaction()
 }
 
 async function runExtract(file, gen) {
@@ -172,7 +197,7 @@ function startWithFile(file) {
   } else {
     pushText('me', '📄 ' + (file.name || 'PDF'))
   }
-  const run = () => withTyping((gen) => runExtract(file, gen), run)
+  const run = () => withTyping((gen) => runExtract(file, gen), run).then(autoConfirm)
   run()
 }
 
@@ -182,6 +207,7 @@ function startWithSample() {
   pushText('me', '🧪 MUSTER letter')
   stage.value = 'extracting'
   showReview(SAMPLE_LETTER_TEXT)
+  autoConfirm()
 }
 
 function toggleToken(index) {
@@ -220,6 +246,15 @@ function runAnalyze(question, gen) {
   })
 }
 
+// Starts the full analysis in the background, so "Explain in detail" is usually instant.
+// A failed request is forgotten, so the next click fetches it again.
+function fetchFull(question) {
+  const p = analyzeLetter({ text: redaction.value.text, language: language.value, question: question || null })
+  fullRequest = p
+  p.catch(() => { if (fullRequest === p) fullRequest = null })
+  return p
+}
+
 function confirmRedaction() {
   const msg = reviewMessage()
   if (!msg || busy.value) return
@@ -229,11 +264,47 @@ function confirmRedaction() {
   const question = pendingQuestion.value.trim()
   pendingQuestion.value = ''
   if (question) pushText('me', question)
+  let shown = false
   const run = () =>
     withTyping(async (gen) => {
-      const res = await runAnalyze(question, gen)
-      if (!res) return
+      stage.value = 'analyzing'
+      if (!fullRequest) fetchFull(question)
+      const res = await overviewLetter({ text: redaction.value.text, language: language.value })
+      if (gen !== generation) return
+      analysis.value = res
       msg.explained = true // folds the redaction preview
+      push({ from: 'bot', kind: 'overview', analysis: res })
+      if (!question) push({ from: 'bot', kind: 'actions', actions: DETAIL_CHIPS })
+      stage.value = 'answered'
+      shown = true
+      persist()
+    }, run).then(() => { if (shown && question) answerPending() })
+  run()
+}
+
+// The question typed before the upload is answered by the prefetched full analysis.
+function answerPending() {
+  const run = () =>
+    withTyping(async (gen) => {
+      stage.value = 'asking'
+      const res = await (fullRequest || fetchFull(null))
+      if (gen !== generation) return
+      push({ from: 'bot', kind: 'answer', text: res.answer || res.meaning })
+      push({ from: 'bot', kind: 'actions', actions: DETAIL_CHIPS })
+      stage.value = 'answered'
+      persist()
+    }, run)
+  run()
+}
+
+function explainInDetail() {
+  if (busy.value || !redaction.value) return
+  const run = () =>
+    withTyping(async (gen) => {
+      stage.value = 'detailing'
+      const res = analysis.value?.depth === 'full' ? analysis.value : await (fullRequest || fetchFull(null))
+      if (gen !== generation) return
+      analysis.value = res
       push({ from: 'bot', kind: 'analysis', analysis: res })
       push({ from: 'bot', kind: 'actions', actions: RESULT_CHIPS })
       stage.value = 'answered'
@@ -264,6 +335,7 @@ function ask(question) {
 function openChip(id) {
   const a = analysis.value
   if (!a) return
+  if (id === 'detail') return explainInDetail()
   if (id === 'draft') {
     const map = redaction.value && redaction.value.mapping
     const text = map ? fillPlaceholders(a.draftDe || '', map) : a.draftDe || ''
@@ -293,6 +365,7 @@ function clearState() {
   redaction.value = null
   pendingQuestion.value = ''
   lastAction = null
+  fullRequest = null
   currentId.value = null
 }
 
@@ -311,6 +384,7 @@ export function useConversation() {
     stage,
     busy,
     language,
+    autoRedact,
     analysis,
     redaction,
     pendingQuestion,

@@ -10,9 +10,9 @@ const emit = defineEmits(['toggle', 'confirm'])
 
 const hiddenCount = computed(() => props.message.tokens.filter((t) => t.hidden).length)
 const live = computed(() => props.interactive && !props.message.confirmed)
-// Folded as soon as the LLM result arrives; the user can reopen it.
+// Folded as soon as the LLM result arrives (auto-redact: right away); the user can reopen it.
 const expanded = ref(false)
-const folded = computed(() => props.message.explained && !expanded.value)
+const folded = computed(() => (props.message.explained || props.message.auto) && !expanded.value)
 
 function isWord(t) {
   return /\S/.test(t.text)
@@ -24,7 +24,7 @@ function label(t) {
 
 <template>
   <div v-if="folded" class="bubble bot redaction-folded">
-    <span>🔒 Letter redacted · {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden</span>
+    <span>🔒 {{ message.auto ? 'Hidden automatically' : 'Letter redacted' }} · {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }}</span>
     <button class="fold-toggle" type="button" :aria-expanded="false" @click="expanded = true">Show text ▾</button>
   </div>
   <div v-else class="bubble bot wide">
@@ -50,7 +50,7 @@ function label(t) {
     <div class="muted" style="margin-top: 6px">
       {{ hiddenCount }} item{{ hiddenCount === 1 ? '' : 's' }} hidden. Dates and amounts are kept.
       <button
-        v-if="message.explained"
+        v-if="message.explained || message.auto"
         class="fold-toggle"
         type="button"
         :aria-expanded="true"

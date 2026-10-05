@@ -7,7 +7,7 @@ import ChatThread from './components/ChatThread.vue'
 import Composer from './components/Composer.vue'
 import ChatList from './components/ChatList.vue'
 
-const { stage, language, analysis, startWithFile, reset, view, history, showList } = useConversation()
+const { stage, language, autoRedact, analysis, startWithFile, reset, view, history, showList } = useConversation()
 
 const cameraInput = ref(null)
 const uploadInput = ref(null)
@@ -35,6 +35,7 @@ function onFile(e) {
   <div class="app">
     <AppHeader
       v-model:language="language"
+      v-model:auto-redact="autoRedact"
       :show-new="showNew"
       :show-back="showBack"
       :subtitle="subtitle"

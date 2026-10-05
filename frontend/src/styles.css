@@ -131,6 +131,31 @@ button { cursor: pointer; }
 .lang option { color: var(--ink); background: #fff; }
 .icon-btn { width: 44px; padding: 0; font-size: 20px; line-height: 1; }
 .lang:hover, .icon-btn:hover { background: rgba(255, 255, 255, .18); }
+.header { position: relative; }
+.settings {
+  position: absolute; inset-inline: 12px; top: calc(100% - 4px);
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: var(--card); color: var(--ink);
+  box-shadow: var(--lift), 0 12px 32px -12px rgba(21, 32, 43, .45);
+}
+.setting { display: flex; align-items: center; gap: 14px; cursor: pointer; }
+.setting > span { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.switch {
+  appearance: none; flex: none; cursor: pointer;
+  width: 48px; height: 28px; margin: 0;
+  border-radius: 99px; background: var(--line);
+  position: relative; transition: background .2s;
+}
+.switch::after {
+  content: ""; position: absolute; top: 3px; inset-inline-start: 3px;
+  width: 22px; height: 22px; border-radius: 50%; background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .25); transition: translate .2s;
+}
+.switch:checked { background: var(--stamp); }
+.switch:checked::after { translate: 20px; }
+[dir="rtl"] .switch:checked::after { translate: -20px; }
+.switch:focus-visible { outline: 2px solid var(--stamp); outline-offset: 2px; }
 .back-btn {
   flex: none;
   width: 36px; height: 44px;
