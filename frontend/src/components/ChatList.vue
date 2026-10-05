@@ -133,7 +133,7 @@ function confirmClear() {
           <span class="hl-from">Stadt Nürnberg · Ausländerbehörde</span>
           <span class="hl-line" style="width: 78%" />
           <span class="hl-line" style="width: 56%" />
-          <span class="hl-frist"><span class="mark yellow swipe">Frist: 13.10.2026</span></span>
+          <span class="hl-frist"><span class="mark swipe">Frist: 13.10.2026</span></span>
           <span class="hl-tr">
             <Transition name="word" mode="out-in">
               <span :key="word[0]" :lang="word[0]" dir="auto">↳ {{ word[1] }}</span>
@@ -142,7 +142,7 @@ function confirmClear() {
           <span class="hl-line" style="width: 88%" />
           <span class="hl-line" style="width: 64%" />
           <span class="hl-line" style="width: 40%" />
-          <span class="stamp">klar</span>
+          <img class="stamp" src="/brand/briefklar-letter-check.svg" alt="">
         </div>
       </div>
       <h1>Got a letter from a German office?</h1>

@@ -30,7 +30,7 @@ function label(t) {
   <div v-else class="bubble bot wide">
     <p>
       ✅ I read your letter. This is exactly what I'll send to the AI.
-      <b>Violet bars are hidden</b><template v-if="live">, tap any word to hide or show it</template>.
+      <b>Blue bars are hidden</b><template v-if="live">, tap any word to hide or show it</template>.
     </p>
     <div class="paper" :class="{ readonly: !live, scanning }" dir="ltr" style="margin-top: 8px">
       <template v-for="(t, i) in message.tokens" :key="i">

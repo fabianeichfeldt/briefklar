@@ -7,7 +7,7 @@ from extractors import ExtractionError, LocalOcrExtractor, sniff_mime
 
 LANGS = ["English", "العربية (Arabic)", "Українська (Ukrainian)", "Türkçe (Turkish)", "Русский (Russian)",
          "Română", "فارسی (Persian)", "Español", "Français", "Polski", "Tigrinya", "Kurdî (Kurmanji)"]
-COL = {"red": "#e5484d", "yellow": "#f5b301", "green": "#30a46c", "grey": "#8b8d98"}
+COL = {"red": "#B3261E", "yellow": "#C98A00", "green": "#2E7D32", "grey": "#56616D"}  # Briefklar brand traffic light
 
 st.set_page_config(page_title="Briefklar", page_icon="🚦")
 st.title("🚦 Briefklar")
@@ -82,7 +82,7 @@ items = []
 for d in res.get("deadlines", []):
     items.append({**d, "date": logic.compute_deadline(d, ld, res.get("formal_service", False), rec)})
 color, label = logic.traffic_light(res, items, today, st.session_state.low, st.session_state.red)
-fg = "#111" if color in ("yellow", "grey") else "#fff"
+fg = "#15202B" if color == "yellow" else "#fff"
 st.markdown(f"<div style='background:{COL[color]};color:{fg};padding:14px;border-radius:8px;"
             f"font-weight:600'>{label}</div>", unsafe_allow_html=True)
 

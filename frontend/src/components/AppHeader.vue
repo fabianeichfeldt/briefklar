@@ -9,9 +9,9 @@ defineEmits(['new', 'back'])
 <template>
   <header class="header">
     <button v-if="showBack" class="back-btn" type="button" aria-label="All letters" @click="$emit('back')">‹</button>
-    <div v-if="!showBack" class="logo" aria-hidden="true">B</div>
+    <img v-if="!showBack" class="logo" src="/brand/briefklar-icon.png" alt="" aria-hidden="true">
     <div class="header-title">
-      <b>Briefklar</b>
+      <img class="wordmark" src="/brand/briefklar-wordmark-on-blue.png" alt="Briefklar">
       <span>{{ subtitle }}</span>
     </div>
     <div class="header-actions">
