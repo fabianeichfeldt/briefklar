@@ -1,7 +1,7 @@
 <script setup>
-defineProps({ showNew: Boolean })
+defineProps({ showNew: Boolean, showBack: Boolean, subtitle: { type: String, default: 'explains official letters' } })
 const language = defineModel('language', { type: String, default: 'en' })
-defineEmits(['new'])
+defineEmits(['new', 'back'])
 
 const LANGS = [
   ['en', 'English'],
@@ -15,10 +15,11 @@ const LANGS = [
 
 <template>
   <header class="header">
-    <div class="logo" aria-hidden="true">B</div>
+    <button v-if="showBack" class="back-btn" type="button" aria-label="All letters" @click="$emit('back')">‹</button>
+    <div v-if="!showBack" class="logo" aria-hidden="true">B</div>
     <div class="header-title">
       <b>Briefklar</b>
-      <span>explains official letters</span>
+      <span>{{ subtitle }}</span>
     </div>
     <div class="header-actions">
       <button v-if="showNew" class="icon-btn" type="button" aria-label="New letter" @click="$emit('new')">＋ New</button>

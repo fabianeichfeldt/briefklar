@@ -1,22 +1,12 @@
 <script setup>
 import { computed, reactive } from 'vue'
+import { OFFICES } from '../../lib/labels.js'
 
 const props = defineProps({
   analysis: { type: Object, required: true },
   rtl: Boolean,
 })
 
-const OFFICES = {
-  auslaenderbehoerde: 'Ausländerbehörde',
-  jobcenter: 'Jobcenter',
-  sozialamt: 'Sozialamt',
-  buergeramt: 'Bürgeramt',
-  kita_schule: 'Kita / School',
-  finanzamt: 'Finanzamt',
-  familienkasse: 'Familienkasse',
-  rundfunkbeitrag: 'Rundfunkbeitrag',
-  other: 'Other office',
-}
 const PILLS = { red: 'URGENT', yellow: 'SOON', green: 'INFO' }
 
 const dir = computed(() => (props.rtl ? 'rtl' : 'ltr'))

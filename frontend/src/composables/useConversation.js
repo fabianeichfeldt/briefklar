@@ -3,9 +3,11 @@ import { extractText, analyzeLetter, ApiError } from '../lib/api.js'
 import { downscaleImage } from '../lib/image.js'
 import { redact, fillPlaceholders, tokenize } from '../lib/redact.js'
 import { SAMPLE_LETTER_TEXT } from '../lib/sample.js'
+import { loadHistory, saveHistory, clearHistoryStorage, sanitizeMessage, refreshDays } from '../lib/history.js'
 
 // Module-level singleton state: every useConversation() call shares it.
-// Letter content lives only in memory; nothing is logged.
+// Nothing is logged. Answered letters are saved to this browser's localStorage without
+// photos or the placeholder mapping (see lib/history.js).
 const messages = ref([])
 const stage = ref('start')
 const busy = ref(false)
@@ -13,6 +15,9 @@ const language = ref('en')
 const analysis = ref(null)
 const redaction = ref(null)
 const pendingQuestion = ref('')
+const history = ref(loadHistory()) // newest first
+const currentId = ref(null) // id of the saved conversation being shown, null until first answer
+const view = ref(history.value.length ? 'list' : 'chat')
 
 let nextId = 1
 let generation = 0 // bumped on reset so stale responses are ignored
@@ -50,9 +55,57 @@ function greet() {
   pushText('bot', 'Hi! I explain German official letters in your language. 👋')
   pushText(
     'bot',
-    'Your letter is processed in memory only and nothing is stored. Names and addresses are hidden on your phone before the text is analysed.'
+    'Before your letter is explained, names and addresses are hidden on your phone. Your letters are saved only on this phone, without names, and you can delete them anytime.'
   )
   push({ from: 'bot', kind: 'actions', actions: START_ACTIONS })
+}
+
+function persist() {
+  if (!analysis.value) return
+  const now = new Date().toISOString()
+  if (!currentId.value) currentId.value = `c${Date.now().toString(36)}`
+  const prev = history.value.find((c) => c.id === currentId.value)
+  const entry = {
+    id: currentId.value,
+    createdAt: prev?.createdAt ?? now,
+    updatedAt: now,
+    redactedText: redaction.value?.text ?? '',
+    analysis: analysis.value,
+    messages: messages.value.map(sanitizeMessage).filter(Boolean),
+  }
+  history.value = [entry, ...history.value.filter((c) => c.id !== entry.id)]
+  saveHistory(history.value)
+}
+
+function openConversation(id) {
+  const c = history.value.find((x) => x.id === id)
+  if (!c) return
+  clearState()
+  currentId.value = c.id
+  messages.value = c.messages.map((m) => ({ ...m, id: nextId++ }))
+  analysis.value = refreshDays(c.analysis)
+  // The mapping was never saved, so drafts keep their placeholders.
+  redaction.value = { text: c.redactedText, placeholders: [], mapping: {} }
+  push({ from: 'bot', kind: 'actions', actions: RESULT_CHIPS })
+  stage.value = 'answered'
+  view.value = 'chat'
+}
+
+function deleteConversation(id) {
+  history.value = history.value.filter((c) => c.id !== id)
+  saveHistory(history.value)
+  if (currentId.value === id) reset()
+}
+
+function clearHistory() {
+  history.value = []
+  clearHistoryStorage()
+  reset()
+}
+
+function showList() {
+  if (busy.value) return
+  view.value = 'list'
 }
 
 function reviewMessage() {
@@ -179,6 +232,7 @@ function confirmRedaction() {
       push({ from: 'bot', kind: 'analysis', analysis: res })
       push({ from: 'bot', kind: 'actions', actions: RESULT_CHIPS })
       stage.value = 'answered'
+      persist()
     }, run)
   run()
 }
@@ -197,6 +251,7 @@ function ask(question) {
       if (!res) return
       push({ from: 'bot', kind: 'answer', text: res.answer || res.meaning })
       stage.value = 'answered'
+      persist()
     }, run)
   run()
 }
@@ -207,12 +262,13 @@ function openChip(id) {
   if (id === 'draft') {
     const map = redaction.value && redaction.value.mapping
     const text = map ? fillPlaceholders(a.draftDe || '', map) : a.draftDe || ''
-    push({ from: 'bot', kind: 'draft', text })
+    push({ from: 'bot', kind: 'draft', text, raw: a.draftDe || '' })
   } else if (id === 'glossary') {
     push({ from: 'bot', kind: 'glossary', items: a.glossary || [] })
   } else if (id === 'sources') {
     push({ from: 'bot', kind: 'sources', items: a.sources || [] })
   }
+  persist()
 }
 
 function retry() {
@@ -222,7 +278,7 @@ function retry() {
   lastAction()
 }
 
-function reset() {
+function clearState() {
   generation++
   objectUrls.splice(0).forEach((u) => URL.revokeObjectURL(u))
   messages.value = []
@@ -232,6 +288,13 @@ function reset() {
   redaction.value = null
   pendingQuestion.value = ''
   lastAction = null
+  currentId.value = null
+}
+
+// Starts a fresh letter in the chat view.
+function reset() {
+  clearState()
+  view.value = 'chat'
   greet()
 }
 
@@ -254,5 +317,12 @@ export function useConversation() {
     openChip,
     retry,
     reset,
+    history,
+    currentId,
+    view,
+    openConversation,
+    deleteConversation,
+    clearHistory,
+    showList,
   }
 }

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useConversation } from '../composables/useConversation.js'
 import RedactionPreview from './bubbles/RedactionPreview.vue'
 import AnalysisAnswer from './bubbles/AnalysisAnswer.vue'
@@ -32,6 +32,8 @@ function toBottom() {
   })
 }
 watch(() => [messages.value.length, lastId.value], toBottom, { flush: 'post' })
+// A reopened letter starts at its latest message, like a chat app.
+onMounted(() => nextTick(() => requestAnimationFrame(() => { if (el.value) el.value.scrollTop = el.value.scrollHeight })))
 
 function scrollToAnalysis() {
   const nodes = el.value?.querySelectorAll('[data-kind="analysis"]')

@@ -28,6 +28,14 @@ Date: 2026-10-05 · Part C (Frontend) of [`SPEC.md`](../../../SPEC.md) · Contra
 
 German reply draft: placeholders in `draftDe` are filled back in from the local mapping before display, so it's ready to copy. This happens only in the browser.
 
+## Letter history (WhatsApp-style chat list)
+
+- Every answered letter is saved as one conversation in the browser's `localStorage` (`briefklar.history.v1`, see `lib/history.js`). Nothing goes to a server.
+- Saved: the redacted text, the `Analysis`, the chat messages. **Never saved:** photos (replaced by "📷 Photo (not saved)"), the placeholder → original mapping, the originals of words the user hid, typing/actions/error bubbles. The German draft is stored with placeholders, so reopened drafts show `[NAME]` etc.
+- The app opens on the list when there is history, otherwise on a fresh chat. Rows: office icon with a traffic-light ring, office · letter type, last message preview, time, days-left badge. Tap opens the conversation (follow-ups keep working); 🗑️ deletes one, "Delete all letters" clears everything. A floating "📸 New letter" button starts a new chat; in a chat, "‹" goes back to the list.
+- Days left are recounted against today when a saved letter is shown, and a stale light is escalated to red at ≤ 14 days (mirrors the server rule, never downgrades).
+- This bends the "in memory only" rule in `CLAUDE.md` on purpose (decided 2026-10-05): only redacted data is kept, only on the device, and the greeting says so.
+
 ## Deadline banner
 
 Shown when `analysis` exists. Colour from `light`. Text: `⏰ {daysLeft} days left · {deadline.label} · {date}`. Overdue (`daysLeft < 0`): "Overdue by N days". No deadline: green "No deadline found" (or yellow with `lightReason` if light is yellow). `daysLeft` comes from the server; the frontend never asks the model to count.
@@ -140,4 +148,4 @@ Warm chat background (#efeae2-ish), white bot bubbles, light green user bubbles,
 
 ## Not in v1
 
-City dashboard, `.ics`, streaming, translated UI chrome, offline/PWA.
+City dashboard, `.ics`, streaming, translated UI chrome, offline/PWA, syncing history across devices.
