@@ -109,7 +109,9 @@ def to_analysis(res: dict, redacted_text: str, today: dt.date, answer: str | Non
         "steps": steps,
         "documents": res.get("documents") or [],
         "sources": [{"title": logic.OFFICES[o]["name"], "url": logic.OFFICES[o]["url"]} for o in office_ids],
-        "glossary": res.get("glossary") or [],
+        "glossary": [{"term": g["term"], "explanation": g["explanation"]}
+                     for g in res.get("glossary") or []
+                     if isinstance(g, dict) and g.get("term") and g.get("explanation")],
         "draftDe": res.get("reply_draft_de") or "",
         "office": OFFICE_CODES.get(primary, "other"),
         "letterType": LETTER_TYPES.get(res.get("letter_type"), "other"),

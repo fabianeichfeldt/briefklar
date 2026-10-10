@@ -27,6 +27,9 @@ LLM_RESULT = {
          "source_quote_de": "innerhalb eines Monats nach Bekanntgabe", "confidence": "medium"},
     ],
     "actions": ["Go to the appointment on 20.10.2026."],
+    "documents": ["Passport (Reisepass)", "Biometric photo (biometrisches Lichtbild)"],
+    "glossary": [{"term": "Fortgeltungswirkung", "explanation": "your permit stays valid while you wait"},
+                 {"term": "Vorsprache"}, "Aufenthaltstitel"],
     "consequence_if_missed": None,
     "office_ids": ["auslaenderbehoerde_nbg", "made_up_office"],
     "reply_needed": True,
@@ -52,6 +55,9 @@ def test_maps_llm_output_to_analysis():
     assert a["senderVerified"] is True
     assert [s["title"] for s in a["sources"]] == ["Ausländerbehörde Nürnberg"]  # unknown office ids dropped
     assert a["draftDe"].endswith("[NAME_1]")
+    assert a["documents"] == ["Passport (Reisepass)", "Biometric photo (biometrisches Lichtbild)"]
+    assert a["glossary"] == [{"term": "Fortgeltungswirkung",
+                              "explanation": "your permit stays valid while you wait"}]  # malformed items dropped
 
 
 def test_grey_becomes_yellow_and_undated_deadline_is_flagged():

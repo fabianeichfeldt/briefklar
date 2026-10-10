@@ -18,6 +18,8 @@ SCHEMA = """{
    "fixed_date": "YYYY-MM-DD or null", "amount": 1, "unit": "days|weeks|months|null",
    "source_quote_de": "exact German sentence from the letter", "confidence": "high|medium|low"}],
  "actions": ["short step in USER_LANG"],
+ "documents": ["document the letter asks you to bring or send, in USER_LANG with the German word in brackets; only ones named in the letter"],
+ "glossary": [{"term": "German official term exactly as in the letter", "explanation": "plain meaning in USER_LANG"}],
  "consequence_if_missed": "USER_LANG or null",
  "office_ids": ["ids from the allowed list only"],
  "reply_needed": false,
